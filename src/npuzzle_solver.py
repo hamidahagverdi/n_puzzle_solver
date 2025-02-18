@@ -1,34 +1,27 @@
 import heapq
 import copy
+import math
 import sys
 
 class NPuzzle:
-    """
-    A class to solve N-Puzzle problems using A* search algorithm.
-    
-    Attributes:
-        initial_state (list): The starting configuration of the puzzle
-        n (int): Size of the puzzle grid
-        goal_state (list): The target configuration of the puzzle
-    """
-
     def __init__(self, initial_state):
         """
-        Initialize the N-puzzle with the given initial state.
-
-        Args:
-            initial_state (list): 2D list representing the puzzle configuration
+        Initialize the N-puzzle with the given initial state
+        initial_state is a 2D list representing the puzzle
         """
+        # Debug print to understand the initial state
+        print("Initial State:")
+        for row in initial_state:
+            print(row)
+        
         self.initial_state = initial_state
         self.n = len(initial_state)
-        self.goal_state = self._create_goal_state()
-    
-    def _create_goal_state(self):
+        self.goal_state = self.create_goal_state()
+        
+    def create_goal_state(self):
         """
-        Create the goal state based on the puzzle size.
-
-        Returns:
-            list: Goal state configuration
+        Create the goal state based on the puzzle size
+        Numbers will be in ascending order, with blank space at the end
         """
         goal = []
         total_nums = self.n * self.n
@@ -46,18 +39,9 @@ class NPuzzle:
         
         return goal
     
-    def _find_blank(self, state):
+    def find_blank(self, state):
         """
-        Find the position of the blank square.
-
-        Args:
-            state (list): Current puzzle state
-
-        Returns:
-            tuple: Row and column of the blank square
-        
-        Raises:
-            ValueError: If no blank square is found
+        Find the position of the blank square
         """
         for i in range(self.n):
             for j in range(self.n):
@@ -65,17 +49,11 @@ class NPuzzle:
                     return i, j
         raise ValueError(f"No blank square found in state: {state}")
     
-    def _get_possible_moves(self, state):
+    def get_possible_moves(self, state):
         """
-        Generate possible moves by moving the blank square.
-
-        Args:
-            state (list): Current puzzle state
-
-        Returns:
-            list: Possible next states
+        Generate possible moves by moving the blank square
         """
-        blank_row, blank_col = self._find_blank(state)
+        blank_row, blank_col = self.find_blank(state)
         moves = []
         
         # Possible move directions: up, down, left, right
@@ -99,16 +77,15 @@ class NPuzzle:
         
         return moves
     
-    def _manhattan_distance(self, state):
+    def manhattan_distance(self, state):
         """
-        Calculate Manhattan distance heuristic.
-
-        Args:
-            state (list): Current puzzle state
-
-        Returns:
-            int: Manhattan distance heuristic value
+        Calculate Manhattan distance heuristic
         """
+        # Debug print
+        print("Calculating Manhattan Distance for state:")
+        for row in state:
+            print(row)
+        
         distance = 0
         for i in range(self.n):
             for j in range(self.n):
@@ -122,15 +99,13 @@ class NPuzzle:
                     distance += abs(i - target_row) + abs(j - target_col)
         return distance
     
-    def is_solvable(self):
+    def is_solvable(self, state):
         """
-        Determine if the puzzle is solvable.
-
-        Returns:
-            bool: True if the puzzle is solvable, False otherwise
+        Determine if the puzzle is solvable
+        Based on inversions count
         """
         # Flatten the state
-        flat_state = [num for row in self.initial_state for num in row if num != ' ']
+        flat_state = [num for row in state for num in row if num != ' ']
         
         # Count inversions
         inversions = 0
@@ -145,8 +120,148 @@ class NPuzzle:
             return inversions % 2 == 0
         else:
             # Even grid size: find blank row from bottom
-            blank_row = self.n - self._find_blank(self.initial_state)[0]
+            blank_row = self.n - self.find_blank(state)[0]
             
             # Solvability based on blank position and inversions
             if blank_row % 2 == 1:
                 return inversions % 2 == 0
+            else:
+                return inversions % 2 == 1
+    
+    def solve(self):
+        """
+        Solve the puzzle using A* search algorithm
+        """
+        # Debug print initial state dimensions
+        print(f"Puzzle size: {self.n}x{self.n}")
+        print(f"Grid dimensions: {len(self.initial_state)} rows x {len(self.initial_state[0])} columns")
+        
+        if not self.is_solvable(self.initial_state):
+            return None
+        
+        # Define a wrapper class for comparison
+        class StateWrapper:
+            def __init__(self, f, g, state, path):
+                self.f = f
+                self.g = g
+                self.state = state
+                self.path = path
+            
+            def __lt__(self, other):
+                return self.f < other.f
+        
+        # Priority queue for A* search
+        start_node = StateWrapper(
+            self.manhattan_distance(self.initial_state),  # f_score
+            0,  # g_score
+            self.initial_state,  # current state
+            []  # path of moves
+        )
+        
+        # Set to keep track of visited states to avoid cycles
+        visited = set(tuple(map(tuple, self.initial_state)))
+        
+        # Heap to manage frontier
+        frontier = [start_node]
+        heapq.heapify(frontier)
+        
+        while frontier:
+            current_node = heapq.heappop(frontier)
+            current_state = current_node.state
+            
+            # Check if current state is goal state
+            if current_state == self.goal_state:
+                return current_node.path
+            
+            # Generate possible moves
+            for move in self.get_possible_moves(current_state):
+                # Convert move to hashable tuple for visited check
+                move_tuple = tuple(map(tuple, move))
+                
+                # Skip if state has been visited
+                if move_tuple in visited:
+                    continue
+                
+                # Mark as visited
+                visited.add(move_tuple)
+                
+                # Calculate new scores
+                new_g = current_node.g + 1
+                new_f = new_g + self.manhattan_distance(move)
+                
+                # Add to frontier
+                new_path = current_node.path + [move]
+                new_node = StateWrapper(new_f, new_g, move, new_path)
+                heapq.heappush(frontier, new_node)
+        
+        # No solution found
+        return None
+
+def read_puzzle_from_file(filename):
+    """
+    Read puzzle configuration from a file with consistent grid parsing
+    """
+    with open(filename, 'r') as f:
+        # Read all lines and split into values
+        lines = f.readlines()
+        
+        # Find the maximum number of columns
+        max_cols = max(len(line.strip().split()) for line in lines)
+        
+        # Parse puzzle ensuring consistent grid
+        puzzle = []
+        for line in lines:
+            row = []
+            vals = line.strip().split()
+            
+            # Pad the row to ensure consistent length
+            for val in vals:
+                val = val.strip()
+                if val == '':
+                    row.append(' ')
+                else:
+                    try:
+                        row.append(int(val))
+                    except ValueError:
+                        row.append(' ')
+            
+            # Pad row to max columns if needed
+            while len(row) < max_cols:
+                row.append(' ')
+            
+            # Only add rows with content
+            if row:
+                puzzle.append(row)
+        
+        return puzzle
+
+def main():
+    # Check if filename is provided as command-line argument
+    if len(sys.argv) < 2:
+        print("Usage: python puzzle.py <input_file>")
+        sys.exit(1)
+    
+    # Read puzzle from file
+    puzzle_file = sys.argv[1]
+    initial_state = read_puzzle_from_file(puzzle_file)
+    
+    # Create puzzle solver
+    puzzle = NPuzzle(initial_state)
+    
+    # Solve the puzzle
+    solution = puzzle.solve()
+    
+    # Output results
+    if solution is None:
+        print("No solution exists for this puzzle.")
+    else:
+        print(f"Puzzle solved in {len(solution)} moves!")
+        print("Solution Path:")
+        for i, state in enumerate(solution, 1):
+            print(f"Move {i}:")
+            for row in state:
+                print(' '.join(str(val) for val in row))
+            print()
+
+if __name__ == "__main__":
+    main()

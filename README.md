@@ -45,12 +45,12 @@ Example input file (4×4 puzzle):
 
 Run the program with an input file:
 ```bash
-python src/puzzle.py <input_file>
+python src/npuzzle_solver.py <input_file>
 ```
 
 Example:
 ```bash
-python src/puzzle.py examples/n-puzzle.txt
+python src/npuzzle_solver.py examples/3x3_simple.txt
 ```
 
 ## Implementation Details
@@ -96,19 +96,15 @@ Move 2:
 n-puzzle-solver/
 ├── src/
 │   ├── __init__.py
-│   └── puzzle.py          # Main program code
+│   └── npuzzle_solver.py          # Main program code
 ├── examples/
-│   └── n-puzzle.txt       # Example input file
-├── .gitignore
+│   └── 3x3_simple.txt       # Example input file
+│   └── 5x5_dinput.txt       # Example input file
+│   └── 5x5_input.txt       # Example input file 
 ├── README.md
-└── requirements.txt
 ```
 
 ## Requirements
 
 - Python 3.8 or higher
 - No additional dependencies required
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.

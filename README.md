@@ -29,14 +29,14 @@ The program reads from a file with the following format:
 Example input file (3×3 puzzle):
 ```
 1   2   3
-4   0   5
+4       5
 7   8   6
 ```
 
 Example input file (4×4 puzzle):
 ```
 1   2   3   4
-5   6   0   8
+5   6       8
 9   10  7   11
 13  14  15  12
 ```
@@ -74,20 +74,20 @@ Example output:
 ```
 Initial State:
 1 2 3
-4 0 5
+4   5
 7 8 6
 
 Puzzle solved in 2 moves!
 Solution Path:
 Move 1:
 1 2 3
-4 5 0
+4 5  
 7 8 6
 
 Move 2:
 1 2 3
 4 5 6
-7 8 0
+7 8  
 ```
 
 ## Project Structure
